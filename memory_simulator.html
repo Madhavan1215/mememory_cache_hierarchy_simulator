@@ -8,10 +8,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@600;700&display=swap');
 
 :root {
-  --bg:    #d7dee6;
-  --panel: #8593a9;
-  --card:  #9da5b4;
-  --bdr:   #0e1924;
+  --bg:    #f8fafc;
+  --panel: #ffffff;
+  --card:  #f1f5f9;
+  --bdr:   #e2e8f0;
+  --l1:    #0891b2;
+  --l2:    #7c3aed;
+  --ram:   #ea580c;
+  --stor:  #e11d48;
+  --grn:   #16a34a;
+  --ylw:   #d97706;
+  --txt:   #0f172a;
+  --mute:  #64748b;
+  --dim:   #cbd5e1;
+}
+body.dark {
+  --bg:    #050c15;
+  --panel: #0a1628;
+  --card:  #080f1c;
+  --bdr:   #1a2a3a;
   --l1:    #22d3ee;
   --l2:    #a78bfa;
   --ram:   #fb923c;
@@ -20,8 +35,20 @@
   --ylw:   #fbbf24;
   --txt:   #e2e8f0;
   --mute:  #64748b;
-  --dim:   #46608a;
+  --dim:   #1e293b;
 }
+
+/* TOGGLE BUTTON */
+.theme-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: var(--panel); border: 1px solid var(--bdr);
+  border-radius: 20px; padding: 6px 14px; cursor: pointer;
+  font-family: 'Share Tech Mono','Courier New',monospace;
+  font-size: 11px; font-weight: 700; color: var(--mute);
+  display: flex; align-items: center; gap: 6px;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--l1); color: var(--l1); }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
   background:var(--bg);color:var(--txt);
@@ -45,7 +72,7 @@ body{
 /* INPUT */
 .ibox{background:var(--panel);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:14px;max-width:680px;margin-left:auto;margin-right:auto;}
 .lbl{font-size:10px;letter-spacing:2px;color:var(--mute);text-transform:uppercase;margin-bottom:8px;}
-.ainput{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;color:var(--l1);font-size:13px;font-family:'Share Tech Mono','Courier New',monospace;outline:none;transition:border .2s;margin-bottom:8px;}
+.ainput{width:100%;background:#f8fafc;border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;color:var(--l1);font-size:13px;font-family:'Share Tech Mono','Courier New',monospace;outline:none;transition:border .2s;margin-bottom:8px;}
 .ainput:focus{border-color:var(--l1);}
 .hint{font-size:10px;color:#334155;}
 
@@ -135,6 +162,9 @@ button:disabled{opacity:.35;cursor:not-allowed;}
 </style>
 </head>
 <body>
+
+<!-- THEME TOGGLE -->
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -435,9 +465,16 @@ function runAll() {
   document.getElementById('cmpTbl').innerHTML=tbl;
 
   // ── CLEAN SVG BAR CHART ──
-  const bCols = [COLORS.Storage, COLORS.L1, '#fbbf24', '#4ade80'];
+  const isDark = document.body.classList.contains('dark');
+  const graphBg = isDark ? '#080f1c' : '#f8fafc';
+  const graphBdr = isDark ? 'none' : '1px solid #e2e8f0';
+  const gridCol0 = isDark ? '#334155' : '#cbd5e1';
+  const gridCol1 = isDark ? '#1e2d3d' : '#e2e8f0';
+  const axisCol  = isDark ? '#334155' : '#cbd5e1';
+  const lblCol   = isDark ? '#64748b' : '#94a3b8';
   const bNms  = ['Problem', 'Bigger Cache', 'Prefetching', 'Data Reuse'];
   const bIcons= ['🔴','🔵','🟡','🟢'];
+  const bCols = isDark ? ['#f43f5e','#22d3ee','#fbbf24','#4ade80'] : ['#e11d48','#0891b2','#d97706','#16a34a'];
   const mx    = Math.max(...allTotals, 1);
   const SVG_W = 380, SVG_H = 200;
   const pad   = {top:56, bot:44, left:40, right:36};
@@ -454,12 +491,12 @@ function runAll() {
     const yv  = Math.round(mx / steps * g);
     const gy  = pad.top + chartH - (yv/mx)*chartH;
     const dash = g===0 ? '' : 'stroke-dasharray="4 4"';
-    const col  = g===0 ? '#334155' : '#1e2d3d';
+    const col  = g===0 ? gridCol0 : gridCol1;
     gridLines += `<line x1="${pad.left}" y1="${gy}" x2="${pad.left+chartW}" y2="${gy}" stroke="${col}" stroke-width="${g===0?1.5:1}" ${dash}/>`;
-    yLabels   += `<text x="${pad.left-6}" y="${gy+4}" fill="#4a5568" font-size="9" text-anchor="end" font-family="Courier New">${yv}</text>`;
+    yLabels   += `<text x="${pad.left-6}" y="${gy+4}" fill="${lblCol}" font-size="9" text-anchor="end" font-family="Courier New">${yv}</text>`;
   }
 
-  const yAxisLabel = `<text x="12" y="${pad.top+chartH/2}" fill="#4a5568" font-size="9" text-anchor="middle" font-family="Courier New" transform="rotate(-90,12,${pad.top+chartH/2})">Cycles</text>`;
+  const yAxisLabel = `<text x="12" y="${pad.top+chartH/2}" fill="${lblCol}" font-size="9" text-anchor="middle" font-family="Courier New" transform="rotate(-90,12,${pad.top+chartH/2})">Cycles</text>`;
 
   let bars='', valLabels='', xLabels='', savings='', animStyles='', defs='';
   const baseY = pad.top + chartH - (allTotals[0]/mx)*chartH;
@@ -503,12 +540,12 @@ function runAll() {
   const svg = `
   <style>${animStyles}</style>
   <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg"
-    style="width:100%;height:auto;display:block;background:#080f1c;border-radius:10px">
+    style="width:100%;height:auto;display:block;background:${graphBg};border-radius:10px;border:${graphBdr}">
     <defs>${defs}</defs>
     ${gridLines}${yAxisLabel}${yLabels}
     ${bars}${baseline}${savings}${valLabels}${xLabels}
-    <line x1="${pad.left}" y1="${pad.top+chartH}" x2="${pad.left+chartW}" y2="${pad.top+chartH}" stroke="#334155" stroke-width="1.5"/>
-    <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+chartH}" stroke="#334155" stroke-width="1.5"/>
+    <line x1="${pad.left}" y1="${pad.top+chartH}" x2="${pad.left+chartW}" y2="${pad.top+chartH}" stroke="${axisCol}" stroke-width="1.5"/>
+    <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+chartH}" stroke="${axisCol}" stroke-width="1.5"/>
   </svg>`;
 
   document.getElementById('barChart').innerHTML = svg;
@@ -577,6 +614,14 @@ function resetAll() {
     ['log','hits','cyc'].forEach(p=>document.getElementById(p+i).innerHTML='');
   });
   showTab(0);
+}
+
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+  // re-render graph if comparison tab data exists
+  if (allLogs.length) runAll();
 }
 </script>
 </body>
