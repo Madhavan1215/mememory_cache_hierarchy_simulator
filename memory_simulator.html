@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Memory Hierarchy Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@600;700&display=swap');
+
+:root {
+  --bg:    #d7dee6;
+  --panel: #8593a9;
+  --card:  #9da5b4;
+  --bdr:   #0e1924;
+  --l1:    #22d3ee;
+  --l2:    #a78bfa;
+  --ram:   #fb923c;
+  --stor:  #f43f5e;
+  --grn:   #4ade80;
+  --ylw:   #fbbf24;
+  --txt:   #e2e8f0;
+  --mute:  #64748b;
+  --dim:   #46608a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:'Share Tech Mono','Courier New',monospace;
+  min-height:100vh;padding:22px 18px 48px;
+}
+
+/* HEADER */
+.hdr{text-align:center;margin-bottom:22px;}
+.hdr .sub{font-size:10px;letter-spacing:4px;color:var(--l1);margin-bottom:8px;}
+.hdr h1{font-family:'Rajdhani','Arial Black',sans-serif;font-size:42px;font-weight:700;color:#f8fafc;margin-bottom:4px;}
+.hdr p{font-size:11px;color:var(--mute);}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:20px;}
+.leg{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--bdr);border-radius:20px;padding:5px 13px;}
+.ldot{width:9px;height:9px;border-radius:2px;}
+.leg span{font-size:10px;color:#94a3b8;}
+.leg b{font-size:10px;}
+
+/* INPUT */
+.ibox{background:var(--panel);border:1px solid var(--bdr);border-radius:13px;padding:18px;margin-bottom:14px;max-width:680px;margin-left:auto;margin-right:auto;}
+.lbl{font-size:10px;letter-spacing:2px;color:var(--mute);text-transform:uppercase;margin-bottom:8px;}
+.ainput{width:100%;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;color:var(--l1);font-size:13px;font-family:'Share Tech Mono','Courier New',monospace;outline:none;transition:border .2s;margin-bottom:8px;}
+.ainput:focus{border-color:var(--l1);}
+.hint{font-size:10px;color:#334155;}
+
+/* BUTTONS */
+.brow{display:flex;gap:10px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;max-width:680px;margin-left:auto;margin-right:auto;}
+button{padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Share Tech Mono','Courier New',monospace;letter-spacing:1px;transition:opacity .2s;}
+button:hover{opacity:.85;}
+button:disabled{opacity:.35;cursor:not-allowed;}
+.brun{border:none;background:#2563eb;color:#fff;}
+.bplay{border:1px solid #22d3ee55;background:var(--panel);color:var(--l1);}
+.brst{border:1px solid var(--bdr);background:var(--panel);color:var(--mute);}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;}
+.tbtn{padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--bdr);background:var(--panel);color:var(--mute);font-family:'Share Tech Mono','Courier New',monospace;transition:all .2s;letter-spacing:.5px;}
+.tbtn.active{color:#f1f5f9;}
+.t0.active{color:var(--stor);border-color:var(--stor);background:#f43f5e12;}
+.t1.active{color:var(--l1);border-color:var(--l1);background:#22d3ee12;}
+.t2.active{color:var(--ylw);border-color:var(--ylw);background:#fbbf2412;}
+.t3.active{color:var(--grn);border-color:var(--grn);background:#4ade8012;}
+.t4.active{color:var(--l2);border-color:var(--l2);background:#a78bfa12;}
+
+/* LAYOUT */
+.main{display:flex;gap:14px;flex-wrap:wrap;}
+.cleft{flex:2;min-width:270px;}
+.cright{flex:1;min-width:210px;display:flex;flex-direction:column;gap:11px;}
+
+/* SECTION HEADER */
+.sechdr{background:var(--panel);border-radius:12px;padding:13px 15px;margin-bottom:13px;border-left:3px solid;}
+.sechdr h2{font-size:13px;font-weight:700;margin-bottom:4px;}
+.sechdr p{font-size:11px;color:var(--mute);line-height:1.6;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:11px 13px;margin-bottom:7px;transition:border-color .3s,box-shadow .3s;}
+.ctop{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.cnum{font-size:11px;color:var(--mute);min-width:24px;}
+.caddr{font-size:13px;font-weight:700;color:#f1f5f9;background:#0f172a;padding:2px 10px;border-radius:6px;}
+.ccost{margin-left:auto;font-size:12px;font-weight:700;}
+.badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px;}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1px solid;}
+.evnote{font-size:10px;color:var(--ylw);margin-top:4px;}
+.l1row{display:flex;align-items:center;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.l1lbl{font-size:9px;color:var(--mute);}
+.l1slot{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid;}
+
+/* STAT BOXES */
+.sbox{background:var(--panel);border:1px solid var(--bdr);border-radius:12px;padding:14px;}
+.sbox.ac{border-color:#22d3ee22;}
+.slbl{font-size:10px;letter-spacing:2px;color:var(--mute);text-transform:uppercase;margin-bottom:11px;}
+
+/* PYRAMID */
+.prow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;margin-bottom:5px;border:1px solid;}
+.pname{font-size:11px;font-weight:700;min-width:68px;}
+.pcost{font-size:10px;color:var(--mute);}
+.pslot{font-size:10px;color:var(--mute);margin-left:auto;}
+
+/* HIT BARS */
+.hrow{margin-bottom:9px;}
+.htop{display:flex;justify-content:space-between;margin-bottom:3px;}
+.htop b{font-size:11px;}
+.htop span{font-size:10px;color:#94a3b8;}
+.btrack{height:6px;background:#0f172a;border-radius:99px;overflow:hidden;}
+.bfill{height:100%;border-radius:99px;transition:width .6s ease;}
+
+/* CYCLE ROWS */
+.crow{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.crow span{font-size:11px;color:var(--mute);}
+.crow b{font-size:14px;font-weight:900;}
+.dvd{border:none;border-top:1px solid var(--dim);margin:8px 0;}
+
+/* KEY TEXT */
+.ktxt{font-size:11px;color:var(--mute);line-height:1.85;}
+.ktxt b{font-weight:700;}
+
+/* COMPARISON TABLE */
+.ctbl{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;}
+.ctbl th{text-align:left;padding:8px 10px;color:var(--mute);border-bottom:1px solid var(--dim);font-weight:700;letter-spacing:1px;font-size:10px;}
+.ctbl td{padding:10px 10px;border-bottom:1px solid #0a0f18;}
+.ctbl tr:last-child td{border-bottom:none;}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid;}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--mute);font-size:12px;line-height:2.4;}
+.empty b{color:var(--l1);}
+
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="sub">Computer Architecture &amp; Organisation</div>
+  <h1>Memory Hierarchy Simulator</h1>
+  <p>The Memory Wall Problem &nbsp;→&nbsp; Three Real-World Solutions</p>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="leg"><div class="ldot" style="background:var(--l1)"></div><span>L1 Cache</span><b style="color:var(--l1)">1 cycle</b></div>
+  <div class="leg"><div class="ldot" style="background:var(--l2)"></div><span>L2 Cache</span><b style="color:var(--l2)">5 cycles</b></div>
+  <div class="leg"><div class="ldot" style="background:var(--ram)"></div><span>RAM</span><b style="color:var(--ram)">20 cycles</b></div>
+  <div class="leg"><div class="ldot" style="background:var(--stor)"></div><span>Storage</span><b style="color:var(--stor)">100 cycles</b></div>
+</div>
+
+<!-- INPUT -->
+<div class="ibox">
+  <div class="lbl">Enter Memory Addresses (space separated)</div>
+  <input class="ainput" id="addrIn" value="101 202 303 404 505 101 303 606 202 101" placeholder="e.g. 101 202 303 101 404"/>
+</div>
+
+<!-- BUTTONS -->
+<div class="brow">
+  <button class="brun"  onclick="runAll()">⚙ SIMULATE ALL</button>
+  <button class="bplay" id="playBtn" onclick="startPlay()" disabled>▶ PLAYBACK</button>
+  <button class="brst"  onclick="resetAll()">↺ RESET</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabRow" style="display:none">
+  <button class="tbtn t0 active" onclick="showTab(0)">🔴 Problem</button>
+  <button class="tbtn t1"        onclick="showTab(1)">🔵 Bigger Cache</button>
+  <button class="tbtn t2"        onclick="showTab(2)">🟡 Prefetching</button>
+  <button class="tbtn t3"        onclick="showTab(3)">🟢 Data Reuse</button>
+  <button class="tbtn t4"        onclick="showTab(4)">🟣 Comparison</button>
+</div>
+
+<!-- EMPTY STATE -->
+<div class="empty" id="emptyState">
+  Enter addresses above and click <b>⚙ SIMULATE ALL</b><br/>
+  First see the Memory Wall problem<br/>
+  Then watch all three solutions reduce the cycles<br/>
+  Finish with a full side-by-side comparison
+</div>
+
+<!-- ALL SECTIONS -->
+<div id="allSecs" class="hidden">
+
+  <!-- TAB 0: PROBLEM -->
+  <div id="sec0" class="main">
+    <div class="cleft">
+      <div class="sechdr" style="border-color:var(--stor)">
+        <h2 style="color:var(--stor)">🔴 The Problem — No Optimisation</h2>
+        <p>Normal CPU, L1 holds only 4 items. Watch Cold Misses and Evictions force expensive 100-cycle Storage trips every time.</p>
+      </div>
+      <div id="log0"></div>
+    </div>
+    <div class="cright">
+      <div class="sbox"><div class="slbl">Memory Pyramid</div><div id="pyr0"></div></div>
+      <div class="sbox"><div class="slbl">Hit Breakdown</div><div id="hits0"></div></div>
+      <div class="sbox"><div class="slbl">Cycle Summary</div><div id="cyc0"></div></div>
+      <div class="sbox ac">
+        <div class="slbl" style="color:var(--stor)">The Memory Wall</div>
+        <div class="ktxt">
+          Storage is <b style="color:var(--stor)">100×</b> slower than L1.<br/>
+          Cold Miss = first time seeing an address — always goes to Storage.<br/>
+          Eviction = L1 full, oldest item thrown out.<br/>
+          <b style="color:var(--ylw)">This gap is what every AI chip tries to close.</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 1: BIGGER CACHE -->
+  <div id="sec1" class="main hidden">
+    <div class="cleft">
+      <div class="sechdr" style="border-color:var(--l1)">
+        <h2 style="color:var(--l1)">🔵 Solution 1 — Bigger Cache</h2>
+        <p>L1 expanded from 4 → 8 slots. More items fit, fewer evictions, repeated addresses stay warm longer.<br/><b style="color:#f1f5f9">Real world: Google TPU has 144MB on-chip SRAM.</b></p>
+      </div>
+      <div id="log1"></div>
+    </div>
+    <div class="cright">
+      <div class="sbox"><div class="slbl">Memory Pyramid</div><div id="pyr1"></div></div>
+      <div class="sbox"><div class="slbl">Hit Breakdown</div><div id="hits1"></div></div>
+      <div class="sbox"><div class="slbl">Cycle Summary</div><div id="cyc1"></div></div>
+      <div class="sbox ac">
+        <div class="slbl" style="color:var(--l1)">Why It Helps</div>
+        <div class="ktxt">
+          Bigger L1 = fewer evictions.<br/>
+          Fewer evictions = repeated data stays in L1.<br/>
+          <b style="color:var(--l1)">Like upgrading from a small pocket to a big bag — you carry more so you go to the store less.</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: PREFETCHING -->
+  <div id="sec2" class="main hidden">
+    <div class="cleft">
+      <div class="sechdr" style="border-color:var(--ylw)">
+        <h2 style="color:var(--ylw)">🟡 Solution 2 — Prefetching</h2>
+        <p>While using address X, secretly load the NEXT address into L1 early. By the time it is needed — already there.<br/><b style="color:#f1f5f9">Real world: iPhone chip predicts and preloads data.</b></p>
+      </div>
+      <div id="log2"></div>
+    </div>
+    <div class="cright">
+      <div class="sbox"><div class="slbl">Memory Pyramid</div><div id="pyr2"></div></div>
+      <div class="sbox"><div class="slbl">Hit Breakdown</div><div id="hits2"></div></div>
+      <div class="sbox"><div class="slbl">Cycle Summary</div><div id="cyc2"></div></div>
+      <div class="sbox ac">
+        <div class="slbl" style="color:var(--ylw)">Why It Helps</div>
+        <div class="ktxt">
+          Data arrives before the CPU even asks for it.<br/>
+          CPU picks it up instantly — no waiting.<br/>
+          <b style="color:var(--ylw)">Like a waiter refilling your water glass before you ask.</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: DATA REUSE -->
+  <div id="sec3" class="main hidden">
+    <div class="cleft">
+      <div class="sechdr" style="border-color:var(--grn)">
+        <h2 style="color:var(--grn)">🟢 Solution 3 — Data Reuse</h2>
+        <p>Sort addresses so same ones are grouped. Each address only suffers one Cold Miss then stays in L1 for all its accesses.<br/><b style="color:#f1f5f9">Real world: Google TPU tiles workloads to reuse weights.</b></p>
+      </div>
+      <div id="log3"></div>
+    </div>
+    <div class="cright">
+      <div class="sbox"><div class="slbl">Memory Pyramid</div><div id="pyr3"></div></div>
+      <div class="sbox"><div class="slbl">Hit Breakdown</div><div id="hits3"></div></div>
+      <div class="sbox"><div class="slbl">Cycle Summary</div><div id="cyc3"></div></div>
+      <div class="sbox ac">
+        <div class="slbl" style="color:var(--grn)">Why It Helps</div>
+        <div class="ktxt">
+          Group repeated accesses together so each address only pays the 100-cycle Storage cost once.<br/>
+          All repeats = L1 hits.<br/>
+          <b style="color:var(--grn)">Like finishing everything you need from the fridge in one trip instead of five.</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: COMPARISON -->
+  <div id="sec4" class="hidden">
+    <div class="sechdr" style="border-color:var(--l2);margin-bottom:16px">
+      <h2 style="color:var(--l2)">🟣 Final Comparison — All Approaches</h2>
+      <p>Side by side. Nvidia H100 and Google TPU combine all three simultaneously to run billions of AI operations per second.</p>
+    </div>
+    <div class="main">
+      <div class="cleft">
+        <div class="sbox" style="margin-bottom:12px">
+          <div class="slbl">Results Table</div>
+          <table class="ctbl" id="cmpTbl"></table>
+        </div>
+        <div class="sbox">
+          <div class="slbl">Cycle Comparison Graph (lower = faster)</div>
+          <div id="barChart" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="cright">
+        <div class="sbox">
+          <div class="slbl">Best vs Worst</div>
+          <div id="bw"></div>
+        </div>
+        <div class="sbox ac">
+          <div class="slbl" style="color:var(--l2)">Final Takeaway</div>
+          <div class="ktxt">
+            <b style="color:var(--l1)">Bigger Cache</b> — hold more, evict less.<br/>
+            <b style="color:var(--ylw)">Prefetching</b> — load early, never wait.<br/>
+            <b style="color:var(--grn)">Data Reuse</b> — group smartly, stay in L1.<br/><br/>
+            <b style="color:var(--ylw)">Nvidia H100 ($30,000)</b> combines all three plus 80GB HBM memory placed millimetres from the chip — just to solve this one problem.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /allSecs -->
+
+<script>
+const COSTS  = {L1:1,L2:5,RAM:20,Storage:100};
+const COLORS = {L1:'#22d3ee',L2:'#a78bfa',RAM:'#fb923c',Storage:'#f43f5e'};
+const LEVELS = ['L1','L2','RAM','Storage'];
+const L2SZ   = 8;
+
+let allLogs=[], allTotals=[], playTimer=null, playQ=[];
+
+// ── SIMULATION ──
+function sim(addrs, l1sz, prefetch) {
+  let l1=[],l2=[],ram=[],total=0,log=[];
+  for (let i=0;i<addrs.length;i++) {
+    const a = addrs[i];
+    if (prefetch && i+1<addrs.length) {
+      const nx=addrs[i+1];
+      if (!l1.includes(nx)){if(l1.length>=l1sz)l1.shift();l1.push(nx);}
+    }
+    let found='',evicted=null;
+    if (l1.includes(a)){found='L1';}
+    else if (l2.includes(a)){found='L2';if(l1.length>=l1sz)evicted=l1.shift();l1.push(a);}
+    else if (ram.includes(a)){found='RAM';if(l2.length>=L2SZ)l2.shift();l2.push(a);if(l1.length>=l1sz)evicted=l1.shift();l1.push(a);}
+    else{found='Storage';ram.push(a);if(l2.length>=L2SZ)l2.shift();l2.push(a);if(l1.length>=l1sz)evicted=l1.shift();l1.push(a);}
+    const cost=COSTS[found]; total+=cost;
+    log.push({idx:i+1,addr:a,found,cost,evicted,l1:[...l1]});
+  }
+  return {log,total};
+}
+
+// ── CARD ──
+function cardHTML(e,t) {
+  const col=COLORS[e.found];
+  const misses=LEVELS.slice(0,LEVELS.indexOf(e.found));
+  let bdg=misses.map(l=>`<span class="badge" style="color:#475569;border-color:#1e293b;background:#0a0f18">${l} MISS ✗</span>`).join('');
+  bdg+=`<span class="badge" style="color:${col};border-color:${col}55;background:${col}14">${e.found} HIT ✓</span>`;
+  const ev=e.evicted?`<div class="evnote">⚠️ EVICTED ${e.evicted} from L1 — cache was full</div>`:'';
+  const slots=e.l1.map(a=>`<span class="l1slot" style="color:${a===e.addr?col:'#475569'};border-color:${a===e.addr?col:'#1e293b'};background:${a===e.addr?col+'14':'#0a0f18'}">${a}</span>`).join('');
+  return `<div class="card" id="c${t}-${e.idx}">
+    <div class="ctop"><span class="cnum">#${e.idx}</span><span class="caddr">ADDR ${e.addr}</span><span class="ccost" style="color:${col}">${e.cost} ${e.cost===1?'cycle':'cycles'}</span></div>
+    <div class="badges">${bdg}</div>${ev}
+    <div class="l1row"><span class="l1lbl">L1 now:</span>${slots}</div>
+  </div>`;
+}
+
+// ── PYRAMID ──
+function pyrHTML(l1sz) {
+  return [{k:'L1',c:'1 cycle',s:`${l1sz} slots`},{k:'L2',c:'5 cycles',s:'8 slots'},{k:'RAM',c:'20 cycles',s:'unlimited'},{k:'Storage',c:'100 cycles',s:'unlimited'}]
+    .map(({k,c,s})=>{const col=COLORS[k];return `<div class="prow" style="border-color:${col}44;background:${col}0a"><span class="pname" style="color:${col}">${k}</span><span class="pcost">${c}</span><span class="pslot">${s}</span></div>`;}).join('');
+}
+
+// ── HITS ──
+function hitsHTML(log) {
+  const n=log.length,h={L1:0,L2:0,RAM:0,Storage:0};
+  log.forEach(e=>h[e.found]++);
+  return LEVELS.map(l=>{const p=n?Math.round(h[l]/n*100):0;return `<div class="hrow"><div class="htop"><b style="color:${COLORS[l]}">${l}</b><span>${h[l]} hit${h[l]!==1?'s':''} · ${p}%</span></div><div class="btrack"><div class="bfill" style="width:${p}%;background:${COLORS[l]}"></div></div></div>`;}).join('');
+}
+
+// ── CYCLES ──
+function cycHTML(log,total,n) {
+  const h={L1:0,L2:0,RAM:0,Storage:0};
+  log.forEach(e=>h[e.found]++);
+  const p=n?Math.round(h.L1/n*100):0;
+  return `<div class="crow"><span>Total Cycles</span><b style="color:var(--ylw)">${total}</b></div>
+    <div class="crow"><span>L1 Hit Rate</span><b style="color:var(--grn)">${p}%</b></div>
+    <div class="crow"><span>Storage Misses</span><b style="color:var(--stor)">${h.Storage}</b></div>
+    <hr class="dvd"/>
+    <div class="crow"><span>Best Possible</span><b style="color:var(--l1)">${n} cycles</b></div>
+    <div class="crow"><span>Worst Possible</span><b style="color:var(--stor)">${n*100} cycles</b></div>`;
+}
+
+// ── RUN ALL ──
+function runAll() {
+  const raw=document.getElementById('addrIn').value.trim();
+  const addrs=raw.split(/\s+/).map(Number).filter(x=>!isNaN(x)&&x>0);
+  if (!addrs.length){alert('Enter at least one address!');return;}
+  const sorted=[...addrs].sort((a,b)=>a-b);
+  const n=addrs.length;
+
+  const r0=sim(addrs,4,false);
+  const r1=sim(addrs,8,false);
+  const r2=sim(addrs,4,true);
+  const r3=sim(sorted,4,false);
+
+  allLogs=[r0.log,r1.log,r2.log,r3.log];
+  allTotals=[r0.total,r1.total,r2.total,r3.total];
+
+  [0,1,2,3].forEach(t=>{
+    document.getElementById('log'+t).innerHTML=allLogs[t].map(e=>cardHTML(e,t)).join('');
+    document.getElementById('pyr'+t).innerHTML=pyrHTML(t===1?8:4);
+    document.getElementById('hits'+t).innerHTML=hitsHTML(allLogs[t]);
+    document.getElementById('cyc'+t).innerHTML=cycHTML(allLogs[t],allTotals[t],n);
+  });
+
+  // comparison table
+  const meta=[
+    {nm:'🔴 Problem (No Optimisation)',col:'var(--stor)'},
+    {nm:'🔵 Solution 1: Bigger Cache', col:'var(--l1)'},
+    {nm:'🟡 Solution 2: Prefetching',  col:'var(--ylw)'},
+    {nm:'🟢 Solution 3: Data Reuse',   col:'var(--grn)'},
+  ];
+  const base=allTotals[0];
+  let tbl=`<tr><th>Approach</th><th>Cycles</th><th>Saved</th><th>L1 Rate</th></tr>`;
+  allLogs.forEach((log,i)=>{
+    const h={L1:0,L2:0,RAM:0,Storage:0};
+    log.forEach(e=>h[e.found]++);
+    const p=Math.round(h.L1/n*100);
+    const sv=base-allTotals[i];
+    const c=meta[i].col;
+    tbl+=`<tr>
+      <td><span class="pill" style="color:${c};border-color:${c}55;background:${c}14">${meta[i].nm}</span></td>
+      <td style="color:${c};font-weight:900;font-size:14px">${allTotals[i]}</td>
+      <td style="color:${sv>0?'var(--grn)':'var(--mute)'};font-weight:700">${sv>0?'↓ '+sv:'—'}</td>
+      <td style="color:var(--grn)">${p}%</td>
+    </tr>`;
+  });
+  document.getElementById('cmpTbl').innerHTML=tbl;
+
+  // ── CLEAN SVG BAR CHART ──
+  const bCols = [COLORS.Storage, COLORS.L1, '#fbbf24', '#4ade80'];
+  const bNms  = ['Problem', 'Bigger Cache', 'Prefetching', 'Data Reuse'];
+  const bIcons= ['🔴','🔵','🟡','🟢'];
+  const mx    = Math.max(...allTotals, 1);
+  const SVG_W = 380, SVG_H = 200;
+  const pad   = {top:56, bot:44, left:40, right:36};
+  const chartW= SVG_W - pad.left - pad.right;
+  const chartH= SVG_H - pad.top  - pad.bot;
+  const barW  = 32;
+  const slots = allTotals.length;
+  const slotW = chartW / slots;
+
+  // ── grid lines & Y axis ticks ──
+  const steps = 4;
+  let gridLines = '', yLabels = '';
+  for (let g=0; g<=steps; g++) {
+    const yv  = Math.round(mx / steps * g);
+    const gy  = pad.top + chartH - (yv/mx)*chartH;
+    const dash = g===0 ? '' : 'stroke-dasharray="4 4"';
+    const col  = g===0 ? '#334155' : '#1e2d3d';
+    gridLines += `<line x1="${pad.left}" y1="${gy}" x2="${pad.left+chartW}" y2="${gy}" stroke="${col}" stroke-width="${g===0?1.5:1}" ${dash}/>`;
+    yLabels   += `<text x="${pad.left-6}" y="${gy+4}" fill="#4a5568" font-size="9" text-anchor="end" font-family="Courier New">${yv}</text>`;
+  }
+
+  const yAxisLabel = `<text x="12" y="${pad.top+chartH/2}" fill="#4a5568" font-size="9" text-anchor="middle" font-family="Courier New" transform="rotate(-90,12,${pad.top+chartH/2})">Cycles</text>`;
+
+  let bars='', valLabels='', xLabels='', savings='', animStyles='', defs='';
+  const baseY = pad.top + chartH - (allTotals[0]/mx)*chartH;
+
+  allTotals.forEach((v,i)=>{
+    const cx   = pad.left + i*slotW + slotW/2;
+    const x    = cx - barW/2;
+    const barH = (v/mx)*chartH;
+    const y    = pad.top + chartH - barH;
+    const col  = bCols[i];
+    const saved= allTotals[0]-v;
+
+    defs += `<linearGradient id="g${i}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${col}" stop-opacity="1"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0.3"/>
+    </linearGradient>`;
+
+    animStyles += `
+      @keyframes grow${i} { from{transform:scaleY(0);transform-box:fill-box;transform-origin:bottom} to{transform:scaleY(1);transform-box:fill-box;transform-origin:bottom} }
+      #b${i}{animation:grow${i} 0.55s cubic-bezier(.34,1.1,.64,1) ${i*0.1}s both;}`;
+
+    bars     += `<rect id="b${i}" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4" fill="url(#g${i})"/>`;
+    valLabels+= `<text x="${cx}" y="${y-8}" fill="${col}" font-size="9" font-weight="bold" text-anchor="middle" font-family="Courier New">${v}</text>`;
+    xLabels  += `
+      <text x="${cx}" y="${pad.top+chartH+12}" fill="#94a3b8" font-size="9" text-anchor="middle">${bIcons[i]}</text>
+      <text x="${cx}" y="${pad.top+chartH+24}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="Courier New">${bNms[i].split(' ')[0]}</text>
+      ${bNms[i].split(' ').length>1?`<text x="${cx}" y="${pad.top+chartH+34}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="Courier New">${bNms[i].split(' ').slice(1).join(' ')}</text>`:''}`;
+
+    if (i>0 && saved>0)
+      savings += `<rect x="${cx-18}" y="${y-26}" width="36" height="13" rx="6" fill="#4ade8012" stroke="#4ade8045" stroke-width="1"/>
+        <text x="${cx}" y="${y-17}" fill="#4ade80" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="Courier New">↓${saved}</text>`;
+    if (i>0 && saved===0)
+      savings += `<rect x="${cx-14}" y="${y-26}" width="28" height="13" rx="6" fill="#f59e0b12" stroke="#f59e0b45" stroke-width="1"/>
+        <text x="${cx}" y="${y-17}" fill="#f59e0b" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="Courier New">same</text>`;
+  });
+
+  const baseline = `
+    <line x1="${pad.left}" y1="${baseY}" x2="${pad.left+chartW}" y2="${baseY}" stroke="#f43f5e" stroke-width="1" stroke-dasharray="5 3" opacity="0.4"/>
+    <text x="${pad.left+chartW+2}" y="${baseY+3}" fill="#f43f5e" font-size="8" font-family="Courier New" opacity="0.7">base</text>`;
+
+  const svg = `
+  <style>${animStyles}</style>
+  <svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg"
+    style="width:100%;height:auto;display:block;background:#080f1c;border-radius:10px">
+    <defs>${defs}</defs>
+    ${gridLines}${yAxisLabel}${yLabels}
+    ${bars}${baseline}${savings}${valLabels}${xLabels}
+    <line x1="${pad.left}" y1="${pad.top+chartH}" x2="${pad.left+chartW}" y2="${pad.top+chartH}" stroke="#334155" stroke-width="1.5"/>
+    <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+chartH}" stroke="#334155" stroke-width="1.5"/>
+  </svg>`;
+
+  document.getElementById('barChart').innerHTML = svg;
+
+  // best/worst
+  const best=Math.min(...allTotals);
+  document.getElementById('bw').innerHTML=`
+    <div class="crow"><span>Best Possible</span><b style="color:var(--l1)">${n} cycles</b></div>
+    <div class="crow"><span>Worst Possible</span><b style="color:var(--stor)">${n*100} cycles</b></div>
+    <hr class="dvd"/>
+    <div class="crow"><span>Problem Cycles</span><b style="color:var(--stor)">${allTotals[0]}</b></div>
+    <div class="crow"><span>Best Solution</span><b style="color:var(--grn)">${best} cycles</b></div>
+    <div class="crow"><span>Total Saved</span><b style="color:var(--ylw)">${allTotals[0]-best} cycles</b></div>`;
+
+  // build playback queue
+  playQ=[];
+  [0,1,2,3].forEach(t=>allLogs[t].forEach(e=>playQ.push({t,idx:e.idx})));
+
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('allSecs').classList.remove('hidden');
+  document.getElementById('tabRow').style.display='flex';
+  document.getElementById('playBtn').disabled=false;
+  showTab(0);
+}
+
+// ── TABS ──
+function showTab(i) {
+  [0,1,2,3,4].forEach(j=>{
+    document.getElementById('sec'+j).classList.toggle('hidden',j!==i);
+    document.querySelectorAll('.tbtn')[j].classList.toggle('active',j===i);
+  });
+}
+
+// ── PLAYBACK ──
+function startPlay() {
+  if (!allLogs.length) return;
+  clearInterval(playTimer);
+  document.getElementById('playBtn').disabled=true;
+  document.querySelectorAll('.card').forEach(c=>{c.style.borderColor='';c.style.boxShadow='';});
+  let qi=0,lastT=-1;
+  playTimer=setInterval(()=>{
+    if (qi>=playQ.length){clearInterval(playTimer);document.getElementById('playBtn').disabled=false;return;}
+    const {t,idx}=playQ[qi];
+    if (t!==lastT){
+      if (lastT>=0) allLogs[lastT].forEach(e=>{const el=document.getElementById(`c${lastT}-${e.idx}`);if(el){el.style.borderColor='';el.style.boxShadow='';}});
+      showTab(t); lastT=t;
+    }
+    if (idx>1){const pr=document.getElementById(`c${t}-${idx-1}`);if(pr){pr.style.borderColor='';pr.style.boxShadow='';}}
+    const entry=allLogs[t][idx-1];
+    const col=COLORS[entry.found];
+    const el=document.getElementById(`c${t}-${idx}`);
+    if (el){el.style.borderColor=col;el.style.boxShadow=`0 0 14px ${col}44`;el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    qi++;
+  },500);
+}
+
+// ── RESET ──
+function resetAll() {
+  clearInterval(playTimer);
+  allLogs=[];allTotals=[];playQ=[];
+  document.getElementById('emptyState').style.display='block';
+  document.getElementById('allSecs').classList.add('hidden');
+  document.getElementById('tabRow').style.display='none';
+  document.getElementById('playBtn').disabled=true;
+  [0,1,2,3].forEach(i=>{
+    ['log','hits','cyc'].forEach(p=>document.getElementById(p+i).innerHTML='');
+  });
+  showTab(0);
+}
+</script>
+</body>
+</html>
